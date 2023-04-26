@@ -1,4 +1,4 @@
-version: '3.8'
+version: '2.1'
 
 services:
   zoo1:
@@ -129,7 +129,7 @@ services:
   conduktor-platform:
     image: conduktor/conduktor-platform:latest
     ports:
-      - "8080:8080"
+      - "8900:8080"
     volumes:
       - conduktor_data:/var/conduktor --user 1000
     depends_on:

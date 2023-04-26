@@ -1,4 +1,4 @@
-version: '3.8'
+version: '2'
 services:
   zookeeper:    
     image: zookeeper:3.7
@@ -86,7 +86,7 @@ services:
     ports:
       - "9000:9000"
     environment:
-      KAFKA_BROKER_CONNECT: "kafka1:19091"
+      KAFKA_BROKER_CONNECT: "kafka1:19091, kafka2:19092, kafka3:19093, kafka4:19094"
     depends_on:
       - kafka1
       - kafka2
