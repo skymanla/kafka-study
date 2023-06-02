@@ -1,7 +1,7 @@
-version: '2'
+version: '3'
 services:
   zookeeper:    
-    image: zookeeper:3.7
+    image: zookeeper
     hostname: zookeeper
     ports:
       - "2181:2181"
@@ -13,7 +13,7 @@ services:
       - ${PWD}/data/zookeeper/datalog:/datalog --user 1000
 
   kafka1:
-    image: confluentinc/cp-kafka:7.0.0
+    image: confluentinc/cp-kafka
     hostname: kafka1
     ports:
       - "9091:9091"
@@ -30,7 +30,7 @@ services:
       - zookeeper
   
   kafka2:
-    image: confluentinc/cp-kafka:7.0.0
+    image: confluentinc/cp-kafka
     hostname: kafka2
     ports:
       - "9092:9092"
@@ -45,9 +45,10 @@ services:
       - ${PWD}/data/kafka2/data:/tmp/kafka-logs --user 1000
     depends_on:
       - zookeeper
+      - kafka1
 
   kafka3:
-    image: confluentinc/cp-kafka:7.0.0
+    image: confluentinc/cp-kafka
     hostname: kafka3
     ports:
       - "9093:9093"
@@ -62,9 +63,11 @@ services:
       - ${PWD}/data/kafka3/data:/tmp/kafka-logs --user 1000
     depends_on:
       - zookeeper
+      - kafka1
+      - kafka2
 
   kafka4:
-    image: confluentinc/cp-kafka:7.0.0
+    image: confluentinc/cp-kafka
     hostname: kafka4
     ports:
       - "9094:9094"
@@ -79,6 +82,9 @@ services:
       - ${PWD}/data/kafka4/data:/tmp/kafka-logs --user 1000
     depends_on:
       - zookeeper
+      - kafka1
+      - kafka2
+      - kafka3
 
   kafdrop:
     image: obsidiandynamics/kafdrop
@@ -88,6 +94,7 @@ services:
     environment:
       KAFKA_BROKER_CONNECT: "kafka1:19091, kafka2:19092, kafka3:19093, kafka4:19094"
     depends_on:
+      - zookeeper
       - kafka1
       - kafka2
       - kafka3
