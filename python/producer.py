@@ -29,7 +29,10 @@ if __name__ == '__main__':
             print('ERROR: Message failed delivery: {}'.format(err))
         else:
             print("Produced event to topic {topic}: key = {key:12} value = {value:12}".format(
-                topic=msg.topic(), key=msg.key().decode('utf-8'), value=msg.value().decode('utf-8')))
+                topic=msg.topic(),
+                key="" if msg.key() is None else msg.key().decode('utf-8'),
+                value="" if msg.value() is None else msg.value().decode('utf-8'))
+            )
 
     # Produce data by selecting random values from these lists.
     topic = "purchases"
@@ -37,12 +40,37 @@ if __name__ == '__main__':
     products = ['book', 'alarm clock', 't-shirts', 'gift card', 'batteries']
 
     count = 0
-    for _ in range(10):
-
-        user_id = choice(user_ids)
-        product = choice(products)
-        producer.produce(topic, product, user_id, callback=delivery_callback)
-        count += 1
+    _dict = [
+        {
+            "name": "ryan",
+            "age": 1,
+            "birth": "990101",
+            "school": "vvvvv"
+        },
+        {
+            "name": "ryan",
+            "age": 2,
+            "birth": "990101",
+            "school": "vvvvv"
+        },
+        {
+            "name": "ryan",
+            "age": 3,
+            "birth": "990101",
+            "school": "vvvvv"
+        }
+    ]
+    producer.produce(
+        topic=topic,
+        key="",
+        value=bytes(str(_dict), 'utf-8'),
+        callback=delivery_callback)
+    # for _ in range(10):
+    #
+    #     user_id = choice(user_ids)
+    #     product = choice(products)
+    #     producer.produce(topic, product, user_id, callback=delivery_callback)
+    #     count += 1
 
     # Block until the messages are sent.
     producer.poll(10000)
