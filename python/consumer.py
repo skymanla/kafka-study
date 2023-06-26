@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import ast
 from argparse import ArgumentParser, FileType
 from configparser import ConfigParser
 from confluent_kafka import Consumer, OFFSET_BEGINNING
@@ -46,13 +47,18 @@ if __name__ == '__main__':
                 print("ERROR: %s".format(msg.error()))
             else:
                 # Extract the (optional) key and value, and print.
+                msg_key = "" if msg.key() is None else msg.key().decode('utf-8')
 
+                msg_value = "" if msg.value() is None else msg.value().decode('utf-8')
+                conv_msg_value = ast.literal_eval(msg_value)
+                print(conv_msg_value)
                 print("Consumed event from topic {topic}: key = {key:12} value = {value:12}".format(
                     topic=msg.topic(),
-                    key="" if msg.key() is None else msg.key().decode('utf-8'),
-                    value="" if msg.value() is None else msg.value().decode('utf-8')))
+                    key=msg_key,
+                    value=msg_value))
     except KeyboardInterrupt:
         pass
     finally:
         # Leave group and commit final offsets
         consumer.close()
+
