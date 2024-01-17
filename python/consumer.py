@@ -50,8 +50,9 @@ if __name__ == '__main__':
                 msg_key = "" if msg.key() is None else msg.key().decode('utf-8')
 
                 msg_value = "" if msg.value() is None else msg.value().decode('utf-8')
-                conv_msg_value = ast.literal_eval(msg_value)
-                print(conv_msg_value)
+                # TODO: 오류확인되서 수정할 예정
+                # conv_msg_value = ast.literal_eval(msg_value)
+                # print(conv_msg_value)
                 print("Consumed event from topic {topic}: key = {key:12} value = {value:12}".format(
                     topic=msg.topic(),
                     key=msg_key,
