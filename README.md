@@ -6,9 +6,9 @@
 ```
 docker compose -f {사용할 yml} up -d --build
 ```
-- python 3.9 이상 설치 필요!
+- python 가상환경 구성
 ```
-cd ./python && python3 -m venv venv && source venv/bin/activate
+python3 -m venv venv && source venv/bin/activate
 ```
 - package install
 ```
@@ -25,4 +25,5 @@ pip install -r requirements.txt
 ## 구동 확인
 - `kafdrop.yml`
 - `kafka-ui.yml`
+- `kafka-ui-minimal.yml`
 - `kafka-bitnami.yml`
