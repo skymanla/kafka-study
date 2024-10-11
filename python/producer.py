@@ -17,6 +17,7 @@ if __name__ == '__main__':
     config_parser = ConfigParser()
     config_parser.read_file(args.config_file)
     config = dict(config_parser['default'])
+    config.update(config_parser['producer'])
 
     # Create Producer instance
     producer = Producer(config)
@@ -40,37 +41,37 @@ if __name__ == '__main__':
     products = ['book', 'alarm clock', 't-shirts', 'gift card', 'batteries']
 
     count = 0
-    # _dict = [
-    #     {
-    #         "name": "ryan",
-    #         "age": 1,
-    #         "birth": "990101",
-    #         "school": "vvvvv"
-    #     },
-    #     {
-    #         "name": "ryan",
-    #         "age": 2,
-    #         "birth": "990101",
-    #         "school": "vvvvv"
-    #     },
-    #     {
-    #         "name": "ryan",
-    #         "age": 3,
-    #         "birth": "990101",
-    #         "school": "vvvvv"
-    #     }
-    # ]
-    # producer.produce(
-    #     topic=topic,
-    #     key="",
-    #     value=bytes(str(_dict), 'utf-8'),
-    #     on_delivery=delivery_callback)
-    for _ in range(10):
+    _dict = [
+        {
+            "name": "ryan",
+            "age": 1,
+            "birth": "990101",
+            "school": "vvvvv"
+        },
+        {
+            "name": "ryan",
+            "age": 2,
+            "birth": "990101",
+            "school": "vvvvv"
+        },
+        {
+            "name": "ryan",
+            "age": 3,
+            "birth": "990101",
+            "school": "vvvvv"
+        }
+    ]
+    producer.produce(
+        topic=topic,
+        key="",
+        value=bytes(str(_dict), 'utf-8'),
+        on_delivery=delivery_callback)
+    # for _ in range(10):
 
-        user_id = choice(user_ids)
-        product = choice(products)
-        producer.produce(topic, product, user_id, callback=delivery_callback)
-        count += 1
+    #     user_id = choice(user_ids)
+    #     product = choice(products)
+    #     producer.produce(topic, product, user_id, callback=delivery_callback)
+    #     count += 1
 
     # Block until the messages are sent.
     producer.poll(10000)
