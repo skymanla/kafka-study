@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kafka Chat App</title>
+</head>
+<body>
+    <h1>Kafka Chat</h1>
+    <div>
+        <input id="messageInput" type="text" placeholder="Enter your message" disabled>
+        <button id="sendButton" onclick="sendMessage()" disabled>Send</button>
+    </div>
+    <div id="messages"></div>
+
+    <script>
+        let ws;
+
+        // WebSocket 연결 설정
+        function connectWebSocket() {
+            ws = new WebSocket("ws://localhost:8000/ws");
+
+            console.log(ws)
+
+            // WebSocket 연결이 열리면 입력과 버튼 활성화
+            ws.onopen = function() {
+                document.getElementById("messageInput").disabled = false;
+                document.getElementById("sendButton").disabled = false;
+                console.log("WebSocket connection opened");
+            };
+
+            // WebSocket을 통해 메시지 수신 시 처리
+            ws.onmessage = function(event) {
+                let messages = document.getElementById('messages');
+                let message = document.createElement('p');
+                message.textContent = event.data;
+                messages.appendChild(message);
+            };
+
+            // WebSocket 연결이 닫혔을 때 재연결 시도
+            ws.onclose = function() {
+                document.getElementById("messageInput").disabled = true;
+                document.getElementById("sendButton").disabled = true;
+                console.log("WebSocket connection closed. Reconnecting...");
+                setTimeout(connectWebSocket, 1000); // 1초 후에 재연결 시도
+            };
+
+            // WebSocket 에러 처리
+            ws.onerror = function(error) {
+                console.log("WebSocket error: ", error);
+            };
+        }
+
+        // 메시지 전송 함수
+        function sendMessage() {
+            let input = document.getElementById("messageInput");
+            if (input.value !== '') {
+                ws.send(input.value);
+                input.value = '';  // 메시지 전송 후 입력 필드 비우기
+            }
+        }
+
+        // 페이지 로드 시 WebSocket 연결
+        window.onload = function() {
+            connectWebSocket();
+        };
+    </script>
+</body>
+</html>
