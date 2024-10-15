@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from confluent_kafka import Producer, Consumer, KafkaException
 import asyncio
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,36 +40,70 @@ async def send_message_to_kafka(message: str):
 
 async def consume_messages(websocket: WebSocket):
     consumer.subscribe([KAFKA_CHAT_TOPIC])
-    try:
-        while True:
-            msg = consumer.poll(timeout=1.0)
-            if msg is None:
-                continue
-            if msg.error():
-                raise KafkaException(msg.error())
-            else:
-                await websocket.send_text(msg.value().decode('utf-8'))
-    except BaseException as e:
-        print(f"Error while consuming messages: {e}")
-    finally:
-        consumer.close()
+    # try:
+    #     while True:
+    #         msg = consumer.poll(timeout=1.0)
+    #         if msg is None:
+    #             continue
+    #         if msg.error():
+    #             raise KafkaException(msg.error())
+    #         # else:
+    #         #     await websocket.send_text(msg.value().decode('utf-8'))
+    # except BaseException as e:
+    #     print(f"Error while consuming messages: {e}")
+    # finally:
+    #     consumer.close()
 
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    await websocket.send_text("Welcome to the chat!")
-    try:
-        consumer_task = asyncio.create_task(consume_messages(websocket))
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
 
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def send_personal_message(self, message: str, websocket: WebSocket):
+        await websocket.send_text(message)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            await connection.send_text(message)
+
+
+manager = ConnectionManager()
+# @app.websocket("/ws")
+# async def websocket_endpoint(websocket: WebSocket):
+#     await websocket.accept()
+#     await websocket.send_text("Welcome to the chat!")
+#     try:
+#         consumer_task = asyncio.create_task(consume_messages(websocket))
+
+#         while True:
+#             data = await websocket.receive_text()
+#             await send_message_to_kafka(data)
+
+#     except Exception as e:
+#         print(f"WebSocket connection error: {e}")
+#     finally:
+#         await websocket.close()
+#         consumer_task.cancel()
+
+@app.websocket("/ws/{client_id}")
+async def websocket_endpoint(websocket: WebSocket, client_id: int):
+    await manager.connect(websocket)
+    try:
         while True:
             data = await websocket.receive_text()
             await send_message_to_kafka(data)
-
-    except Exception as e:
-        print(f"WebSocket connection error: {e}")
-    finally:
-        await websocket.close()
-        consumer_task.cancel()
+            consumer_task = asyncio.create_task(consume_messages(websocket))
+            await manager.send_personal_message(f"You wrote: {data}", websocket)
+            await manager.broadcast(f"Client #{client_id} says: {data}")
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        await manager.broadcast(f"Client #{client_id} left the chat")
 
 @app.get("/")
 def read_root():
@@ -78,4 +112,4 @@ def read_root():
 
 @app.get("/chat")
 def read_root():
-    return FileResponse("python/app/templates/index.html")
+    return FileResponse("python/app/templates/socket_index.html")

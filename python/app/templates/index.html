@@ -7,6 +7,7 @@
 </head>
 <body>
     <h1>Kafka Chat</h1>
+    <h2>Your ID: <span id="ws-id"></span></h2>
     <div>
         <input id="messageInput" type="text" placeholder="Enter your message" disabled>
         <button id="sendButton" onclick="sendMessage()" disabled>Send</button>
@@ -18,9 +19,9 @@
 
         // WebSocket 연결 설정
         function connectWebSocket() {
-            ws = new WebSocket("ws://localhost:8000/ws");
-
-            console.log(ws)
+            var client_id = Date.now()
+            document.querySelector("#ws-id").textContent = client_id;
+            ws = new WebSocket(`ws://localhost:8000/ws/${client_id}`);
 
             // WebSocket 연결이 열리면 입력과 버튼 활성화
             ws.onopen = function() {
