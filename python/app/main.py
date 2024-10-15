@@ -34,26 +34,6 @@ consumer_config = {
 }
 consumer = Consumer(consumer_config)
 
-async def send_message_to_kafka(message: str):
-    producer.produce(KAFKA_CHAT_TOPIC, message.encode('utf-8'))
-    producer.flush()
-
-async def consume_messages(websocket: WebSocket):
-    consumer.subscribe([KAFKA_CHAT_TOPIC])
-    # try:
-    #     while True:
-    #         msg = consumer.poll(timeout=1.0)
-    #         if msg is None:
-    #             continue
-    #         if msg.error():
-    #             raise KafkaException(msg.error())
-    #         # else:
-    #         #     await websocket.send_text(msg.value().decode('utf-8'))
-    # except BaseException as e:
-    #     print(f"Error while consuming messages: {e}")
-    # finally:
-    #     consumer.close()
-
 class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
@@ -74,22 +54,36 @@ class ConnectionManager:
 
 
 manager = ConnectionManager()
-# @app.websocket("/ws")
-# async def websocket_endpoint(websocket: WebSocket):
-#     await websocket.accept()
-#     await websocket.send_text("Welcome to the chat!")
-#     try:
-#         consumer_task = asyncio.create_task(consume_messages(websocket))
 
-#         while True:
-#             data = await websocket.receive_text()
-#             await send_message_to_kafka(data)
+async def send_message_to_kafka(message: str):
+    producer.produce(KAFKA_CHAT_TOPIC, message.encode('utf-8'))
+    producer.flush()
 
-#     except Exception as e:
-#         print(f"WebSocket connection error: {e}")
-#     finally:
-#         await websocket.close()
-#         consumer_task.cancel()
+async def consume_messages(websocket: WebSocket, client_id: int):
+    current_loop = asyncio.get_running_loop()
+
+    consumer.subscribe([KAFKA_CHAT_TOPIC])
+    try:
+        while True:
+            message = await current_loop.run_in_executor(None, consumer.poll, 1.0)
+            if message is None:
+                continue
+            if message.error():
+                print(f"Kafka Consumer error: {message.error()}")
+                continue
+            print(message)
+            await manager.broadcast(f"Client #{client_id} says: {message.value().decode('utf-8')}")
+            # msg = consumer.poll(timeout=1.0)
+            # if msg is None:
+            #     continue
+            # if msg.error():
+            #     raise KafkaException(msg.error())
+            # else:
+            #     await websocket.send_text(msg.value().decode('utf-8'))
+    except BaseException as e:
+        print(f"Error while consuming messages: {e}")
+    # finally:
+    #     consumer.close()
 
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: int):
@@ -98,9 +92,8 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
         while True:
             data = await websocket.receive_text()
             await send_message_to_kafka(data)
-            consumer_task = asyncio.create_task(consume_messages(websocket))
             await manager.send_personal_message(f"You wrote: {data}", websocket)
-            await manager.broadcast(f"Client #{client_id} says: {data}")
+            asyncio.create_task(consume_messages(websocket, client_id))
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         await manager.broadcast(f"Client #{client_id} left the chat")
@@ -113,3 +106,8 @@ def read_root():
 @app.get("/chat")
 def read_root():
     return FileResponse("python/app/templates/socket_index.html")
+
+# 앱 종료 시 Kafka Consumer 닫기
+@app.on_event('shutdown')
+async def app_shutdown():
+    consumer.close()
