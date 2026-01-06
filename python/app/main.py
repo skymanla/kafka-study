@@ -71,7 +71,6 @@ async def consume_messages(websocket: WebSocket, client_id: int):
             if message.error():
                 print(f"Kafka Consumer error: {message.error()}")
                 continue
-            print(message)
             await manager.broadcast(f"Client #{client_id} says: {message.value().decode('utf-8')}")
             # msg = consumer.poll(timeout=1.0)
             # if msg is None:
@@ -82,8 +81,8 @@ async def consume_messages(websocket: WebSocket, client_id: int):
             #     await websocket.send_text(msg.value().decode('utf-8'))
     except BaseException as e:
         print(f"Error while consuming messages: {e}")
-    # finally:
-    #     consumer.close()
+    finally:
+        consumer.close()
 
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: int):
